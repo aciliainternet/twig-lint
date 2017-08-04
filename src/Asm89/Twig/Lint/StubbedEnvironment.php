@@ -25,6 +25,7 @@ class StubbedEnvironment extends \Twig_Environment
     private $stubFilters;
     private $stubFunctions;
     private $stubTests;
+    private $testTokenExceptions;
     protected $parsers;
 
     /**
@@ -39,6 +40,23 @@ class StubbedEnvironment extends \Twig_Environment
 
         $broker = new StubbedTokenParserBroker();
         $this->parsers->addTokenParserBroker($broker);
+
+        $this->testTokenExceptions = $this->getTestTokenExceptions();
+    }
+
+    private function getTestTokenExceptions()
+    {
+        $tokens = array();
+
+        foreach ($this->tests as $test) {
+            $name = $test->getName();
+            if (strpos($name, ' ') > 0) {
+                $parts = explode(' ', $name);
+                $tokens[] = $parts[0];
+            }
+        }
+
+        return $tokens;
     }
 
     /**
@@ -70,6 +88,10 @@ class StubbedEnvironment extends \Twig_Environment
      */
     public function getTest($name)
     {
+        if (in_array($name, $this->testTokenExceptions)) {
+            return false;
+        }
+
         if (!isset($this->stubTests[$name])) {
             $this->stubTests[$name] = new \Twig_SimpleTest('stub', function(){});
         }
